@@ -1,7 +1,7 @@
 # FORVER
-### <a name="top">FORVER, a [semantic versioning](http://semver.org/) library written in modern Fortran
+### FORVER, a [semantic versioning](http://semver.org/) library written in modern Fortran
 
-A pure Fortran library providing a type and a functions for manipulating version numbers following the semantic versioning standard.
+A pure Fortran library providing a type and a functions for manipulating version numbers following the semantic versioning standard version 2.0.0;
 
 + FORVER is a pure Fortran library;
 + FORVER is Fortran 2003+ compliant;
