@@ -1,6 +1,10 @@
 module fover
   implicit none
 
+  private 
+
+  public :: version, version_clean, version_valid, version_checkerror, version_tostring
+
   integer, parameter :: max_token_length = 100
 
   type version
@@ -159,7 +163,17 @@ contains
   end function token_valid
 
   elemental function char_valid(chr) result(ok)
-    !* check if character is in the valid set
+    !! check if character is in the valid set
+    !!
+    !!```fortran
+    !!print*,char_valid('a')
+    !!```
+    !=> T <<<
+    !!```fortran
+    !!print*,char_valid('z')
+    !!```
+    !=> T <<<
+
     character(len=1), intent(in) :: chr
     logical :: ok
 
