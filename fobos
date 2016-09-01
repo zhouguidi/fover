@@ -1,0 +1,38 @@
+[modes]
+modes = gnu-shared gnu-static
+
+#variables
+[common-variables]
+$CSHARED_GNU = -cpp -c -fPIC -frealloc-lhs
+$CSTATIC_GNU = -cpp -c -frealloc-lhs
+$LSHARED     = -shared
+$OPTIMIZE    = -O2
+
+#modes
+[gnu-shared]
+template  = template-common
+cflags    = $CSHARED_GNU $OPTIMIZE
+lflags    = $LSHARED $OPTIMIZE
+mklib     = shared
+output    = libfover.so
+
+[gnu-static]
+template  = template-common
+cflags    = $CSTATIC_GNU $OPTIMIZE
+mklib     = static
+output    = libfover.a
+
+#templates
+[template-common]
+compiler  = gnu
+target    = fover.f90
+build_dir = ./build
+mod_dir   = ./mod
+obj_dir   = ./obj
+src       = ./src
+log       = true
+jobs      = 4
+
+#rules
+[rule-install]
+

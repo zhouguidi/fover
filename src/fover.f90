@@ -7,7 +7,6 @@ module fover
     integer :: major
     integer :: minor
     integer :: patch
-    !TODO: implement as allocatable array of allocatable character
     character(len=max_token_length), dimension(:), allocatable :: pre
     character(len=max_token_length), dimension(:), allocatable :: meta
   contains
