@@ -1,10 +1,11 @@
 [modes]
-modes = gnu-shared gnu-static gnu-test
+modes = gnu-shared gnu-static gnu-test gnu-shared-debug gnu-static-debug gnu-test-debug
 
 #variables
 [common-variables]
 $CSHARED_GNU = -c -fPIC
 $CSTATIC_GNU = -c -fPIC
+$CDEBUG      = -g
 $LSHARED     = -shared
 $OPTIMIZE    = -O2
 
@@ -28,6 +29,28 @@ output    = libfover.a
 [gnu-test]
 template  = template-common
 target    = test.f90
+lflags    = -lfover -Lbuild
+output    = test
+
+[gnu-shared-debug]
+template  = template-common
+target    = fover.f90
+cflags    = $CSHARED_GNU $CDEBUG
+lflags    = $LSHARED
+mklib     = shared
+output    = libfover.so
+
+[gnu-static-debug]
+template  = template-common
+target    = fover.f90
+cflags    = $CSTATIC_GNU $CDEBUG
+mklib     = static
+output    = libfover.a
+
+[gnu-test-debug]
+template  = template-common
+target    = test.f90
+cflags    = $CSTATIC_GNU $CDEBUG
 lflags    = -lfover -Lbuild
 output    = test
 
