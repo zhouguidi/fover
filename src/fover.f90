@@ -17,6 +17,26 @@ module fover
     module procedure version_construct
   end interface version
 
+  interface operator(>)
+      module procedure version_greater_than
+  end interface operator(>)
+
+  interface operator(<)
+      module procedure version_less_than
+  end interface operator(<)
+
+  interface operator(==)
+      module procedure version_equal_to
+  end interface operator(==)
+
+  interface operator(>=)
+      module procedure version_greater_equal
+  end interface operator(>=)
+
+  interface operator(<=)
+      module procedure version_less_equal
+  end interface operator(<=)
+
 contains
   function version_construct(str, err, msg) result(self)
     !* constructor
@@ -319,8 +339,114 @@ contains
     if (allocated(toks_pre)) deallocate(toks_pre)
     if (allocated(toks_meta)) deallocate(toks_meta)
   end function version_fromString
+
+  function version_greater_than(ver1, ver2) result(gt)
+      type(version), intent(in) :: ver1, ver2
+      logical :: gt
+
+      gt = version_diff(ver1, ver2) > 0
+  end function version_greater_than
+
+  function version_less_than(ver1, ver2) result(lt)
+      type(version), intent(in) :: ver1, ver2
+      logical :: lt
+
+      lt = version_diff(ver1, ver2) < 0
+  end function version_less_than
+
+  function version_equal_to(ver1, ver2) result(eq)
+      type(version), intent(in) :: ver1, ver2
+      logical :: eq
+
+      eq = version_diff(ver1, ver2) == 0
+  end function version_equal_to
+
+  function version_greater_equal(ver1, ver2) result(ge)
+      type(version), intent(in) :: ver1, ver2
+      logical :: ge
+
+      ge = version_diff(ver1, ver2) >= 0
+  end function version_greater_equal
+
+  function version_less_equal(ver1, ver2) result(le)
+      type(version), intent(in) :: ver1, ver2
+      logical :: le
+
+      le = version_diff(ver1, ver2) <= 0
+  end function version_less_equal
     
   ! private
+
+  function version_diff(ver1, ver2) result(df)
+      type(version), intent(in) :: ver1, ver2
+      integer :: df
+
+      integer :: itok, ichr, num1, num2
+      character(len=:), allocatable :: tok1, tok2
+
+      if (ver1%major == ver2%major) then
+          if (ver1%minor == ver2%minor) then
+              if (ver1%patch == ver2%patch) then
+                  if (allocated(ver1%pre) .and. size(ver1%pre) /= 0) then     !ver1 has pre
+                      if (allocated(ver2%pre) .and. size(ver2%pre) /= 0) then !ver2 has pre
+                          do itok = 1, min(size(ver1%pre), size(ver2%pre))
+                            tok1 = trim(adjustl(ver1%pre(itok)))
+                            tok2 = trim(adjustl(ver2%pre(itok)))
+                            if (token_numerical(tok1)) then         !current token of ver1 is numerical
+                                if (token_numerical(tok2)) then     !current token of ver2 is numerical
+                                    read(tok1, *)num1
+                                    read(tok2, *)num2
+                                    df = num1 - num2
+                                    if (df /= 0) exit
+                                else                                          !current token of ver2 is not numerical
+                                    df = -80
+                                    exit
+                                end if
+                            else                                              !current token of ver1 is not numerical
+                                if (token_numerical(tok2)) then     !current token of ver2 is numerical
+                                    df = 80
+                                    exit
+                                else                                          !current token of ver2 is not numerical
+                                    do ichr = 1, min(len(tok1), len(tok2))
+                                        df = iachar(tok1(ichr : ichr)) - iachar(tok2(ichr : ichr))
+                                        if (df /= 0) exit
+                                    end do
+                                    if (df == 0) then
+                                        df = len(tok1) - len(tok2)
+                                    end if
+
+                                    if (df /= 0) exit
+                                end if
+                            end if
+                          end do
+
+                          if (df == 0) then
+                              df = (size(ver1%pre) - size(ver2%pre)) * 10
+                          end if
+                      else                                                    !ver2 doesn't have pre
+                          df = -90
+                      end if
+                  else                                                        !ver1 doesn't have pre
+                      if (allocated(ver2%pre) .and. size(ver2%pre) /= 0) then !ver2 has pre
+                          df = 90
+                      else                                                    !ver2 doesn't have pre
+                          df = 0
+                      end if
+                  end if
+              else
+                  df = (ver1%patch - ver2%patch) * 100
+              end if
+          else
+              df = (ver1%minor - ver2%minor) * 1000
+          end if
+      else
+          df = (ver1%major - ver2%major) * 10000
+      end if
+
+      if (allocated(tok1)) deallocate(tok1)
+      if (allocated(tok2)) deallocate(tok2)
+  end function version_diff
+
   function tokenize(str, val, msg, deli) result(toks)
     character(len=*), intent(in) :: str
     integer, intent(out) :: val
