@@ -29,6 +29,10 @@ module fover
       module procedure version_equal_to
   end interface operator(==)
 
+  interface operator(/=)
+      module procedure version_unequal_to
+  end interface operator(/=)
+
   interface operator(>=)
       module procedure version_greater_equal
   end interface operator(>=)
@@ -402,6 +406,13 @@ contains
 
       eq = version_diff(ver1, ver2) == 0
   end function version_equal_to
+
+  function version_unequal_to(ver1, ver2) result(ne)
+      type(version), intent(in) :: ver1, ver2
+      logical :: ne
+
+      ne = version_diff(ver1, ver2) /= 0
+  end function version_unequal_to
 
   function version_greater_equal(ver1, ver2) result(ge)
       type(version), intent(in) :: ver1, ver2
