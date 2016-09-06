@@ -177,7 +177,7 @@ contains
     type(version) :: ver
 
     character(len=*), parameter :: msgpre = "invalid version string: "
-    character(len=:), allocatable :: main, pre, meta
+    character(len=:), allocatable :: thestr, main, pre, meta
     character(len=max_token_length), dimension(:), allocatable :: toks_main, toks_pre, toks_meta
     character(len=1) :: chr
     integer :: pos_hyphen, pos_plus, last_dot, ichr
@@ -189,9 +189,29 @@ contains
     pos_plus = 0
     last_dot = 0
 
+    thestr = str
+
+    if (len(thestr) == 0) then
+      val = -1
+      msg = "empty string"
+      deallocate(thestr)
+      return
+    else
+      if (thestr(1 : 1) == 'v' .or. thestr(1 : 1) == 'V') then
+        if (len(thestr) == 1) then
+          val = -2
+          msg = "empty version"
+          deallocate(thestr)
+          return
+        else
+          thestr = thestr(2 : )
+        end if
+      end if
+    end if
+
     ! look for - and +
-    do ichr = 1, len(str)
-      chr = str(ichr : ichr)
+    do ichr = 1, len(thestr)
+      chr = thestr(ichr : ichr)
       select case(chr)
       case ('-')    ! first hyphen
         if (pos_hyphen ==0) pos_hyphen = ichr
@@ -214,7 +234,7 @@ contains
       if (pos_hyphen == 1) then ! hyphen is the first char
         val = 2
         msg = "main version is empty"
-      elseif (pos_hyphen == len(str)) then ! hyphen is the last char
+      elseif (pos_hyphen == len(thestr)) then ! hyphen is the last char
         val = 3
         msg = "pre-release is empty"
       end if
@@ -224,7 +244,7 @@ contains
       if (pos_plus == 1) then ! plus is the first char
         val = 4
         msg = "main version is empty"
-      elseif (pos_plus == len(str)) then ! plus is the last char
+      elseif (pos_plus == len(thestr)) then ! plus is the last char
         val = 5
         msg = "build metadata is empty"
       end if
@@ -233,18 +253,18 @@ contains
     if (val == 0) then
       if (pos_hyphen == 0) then  ! no hyphen
         if (pos_plus == 0) then  ! no plus
-          main = str
+          main = thestr
           pre = ""
           meta = ""
         else     ! has plus; plus is garanteed not to be 1 or last
-          main = str(1 : pos_plus - 1)
+          main = thestr(1 : pos_plus - 1)
           pre = ""
-          meta = str(pos_plus + 1 : )
+          meta = thestr(pos_plus + 1 : )
         end if
       else   ! has hyphen; hyphen is garanteed not to be 1 or last
         if (pos_plus == 0) then ! no plus
-          main = str(1 : pos_hyphen - 1)
-          pre = str(pos_hyphen + 1 : )
+          main = thestr(1 : pos_hyphen - 1)
+          pre = thestr(pos_hyphen + 1 : )
           meta = ""
         elseif (pos_plus < pos_hyphen) then ! plus is earlier than hyphen
           val = 6
@@ -253,9 +273,9 @@ contains
           val = 7
           msg = "pre-release is empty"
         else  ! has plus; plus is garanteed not to be 1 or last
-          main = str(1 : pos_hyphen - 1)
-          pre = str(pos_hyphen + 1 : pos_plus - 1)
-          meta = str(pos_plus + 1 : )
+          main = thestr(1 : pos_hyphen - 1)
+          pre = thestr(pos_hyphen + 1 : pos_plus - 1)
+          meta = thestr(pos_plus + 1 : )
         end if
       end if
     end if
@@ -332,6 +352,7 @@ contains
     end if
 
     ! clean up
+    if (allocated(thestr)) deallocate(thestr)
     if (allocated(main)) deallocate(main)
     if (allocated(pre)) deallocate(pre)
     if (allocated(meta)) deallocate(meta)
