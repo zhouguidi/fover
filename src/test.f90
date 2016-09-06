@@ -3,6 +3,8 @@ program test
     implicit none
 
     type(version) :: v1, v2
+    integer :: err
+    character(len=:), allocatable :: msg
 
     v1 = version(0, 1, 1, ['alpha', '1    '], ['build', '1849 ']);
     print*,version_tostring(v1)
@@ -48,4 +50,7 @@ program test
 
     print*,version('1.0.0-rc.1') == version('1.0.0-rc.1+build.1')
     print*,version('1.0.0-rc.1') /= version('1.0.0-rc.1+build.1')
+
+    v2 = inc(v1, 'minor', err, msg)
+    print*,version_tostring(v2)
 end program test

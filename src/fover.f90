@@ -41,7 +41,25 @@ module fover
       module procedure version_less_equal
   end interface operator(<=)
 
+  interface v
+    module procedure version_construct
+  end interface v
+
+  interface inc
+    module procedure version_inc
+  end interface inc
+
 contains
+  function version_empty() result(self)
+    type(version) :: self
+
+    self%major = 0
+    self%minor = 0
+    self%patch = 0
+    allocate(self%pre(0))
+    allocate(self%meta(0))
+  end function version_empty
+
   function version_construct(str, err, msg) result(self)
     !* constructor
     character(len=*), intent(in) :: str
@@ -52,11 +70,7 @@ contains
     integer :: val
     character(len=:), allocatable :: msg_text
 
-    self%major = 0
-    self%minor = 0
-    self%patch = 0
-    allocate(self%pre(0))
-    allocate(self%meta(0))
+    self = version_empty()
 
     val = 0
     msg_text = ""
@@ -82,27 +96,6 @@ contains
     if (allocated(self%pre)) deallocate(self%pre)
     if (allocated(self%meta)) deallocate(self%meta)
   end subroutine version_clean
-
-  function v(str, err, msg) result(ver)
-    character(len=*), intent(in) :: str
-    integer, optional, intent(out) :: err
-    character(len=:), allocatable, optional, intent(out) :: msg
-    type(version) :: ver
-
-    if (present(err)) then
-      if (present(msg)) then
-        ver = version(str, err, msg)
-      else
-        ver = version(str, err)
-      end if
-    else
-      if (present(msg)) then
-        ver = version(str, msg = msg)
-      else
-        ver = version(str)
-      end if
-    end if
-  end function v
 
   function version_valid(ver, msg) result(val)
     !* validate
@@ -367,13 +360,7 @@ contains
       ver%meta = toks_meta
     else                  ! empty
       msg = msgpre // msg
-      ver%major = 0
-      ver%minor = 0
-      ver%patch = 0
-      if (allocated(ver%pre)) deallocate(ver%pre)
-      allocate(ver%pre(0))
-      if (allocated(ver%meta)) deallocate(ver%meta)
-      allocate(ver%meta(0))
+      ver = version_empty()
     end if
 
     ! clean up
@@ -427,6 +414,72 @@ contains
 
       le = version_diff(ver1, ver2) <= 0
   end function version_less_equal
+
+  function version_inc_major(ver1) result(ver2)
+    type(version), intent(in) :: ver1
+    type(version) :: ver2
+
+    ver2 = version_empty()
+    ver2%major = ver1%major + 1
+  end function version_inc_major
+
+  function version_inc_minor(ver1) result(ver2)
+    type(version), intent(in) :: ver1
+    type(version) :: ver2
+
+    ver2 = version_empty()
+    ver2%major = ver1%major
+    ver2%minor = ver1%minor + 1
+  end function version_inc_minor
+
+  function version_inc_patch(ver1) result(ver2)
+    type(version), intent(in) :: ver1
+    type(version) :: ver2
+
+    ver2 = version_empty()
+    ver2%major = ver1%major
+    ver2%minor = ver1%minor
+    ver2%patch = ver1%patch + 1
+  end function version_inc_patch
+
+  function version_inc(ver1, part, err, msg) result(ver2)
+    type(version), intent(in) :: ver1
+    character(len=*), intent(in) :: part
+    integer, optional, intent(out) :: err
+    character(len=:), allocatable, optional, intent(out) :: msg
+    type(version) :: ver2
+
+    select case (trim(adjustl(part)))
+    case ('maj', 'major', 'Maj', 'Major')
+      ver2 = version_inc_major(ver1)
+      if (present(err)) err = 0
+      if (present(msg)) msg = ""
+    case ('min', 'minor', 'Min', 'Minor')
+      ver2 = version_inc_minor(ver1)
+      if (present(err)) err = 0
+      if (present(msg)) msg = ""
+    case ('pat', 'patch', 'Pat', 'Patch')
+      ver2 = version_inc_patch(ver1)
+      if (present(err)) err = 0
+      if (present(msg)) msg = ""
+    case default
+      if (present(err)) then
+        err = 1
+        if (present(msg)) then
+          msg = "invalid part name"
+        end if
+        ver2 = version_empty()
+      else
+        if (present(msg)) then
+          msg = "invalid part name"
+          ver2 = version_empty()
+        else
+          write(*,*)"fover(version_inc): invalid part name"
+          stop
+        end if
+      end if
+    end select
+  end function version_inc
     
   ! private
 
