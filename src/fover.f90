@@ -200,6 +200,8 @@ contains
     character(len=1) :: chr
     integer :: pos_hyphen, pos_plus, last_dot, ichr
 
+    ver = version_empty()
+
     val = 0
     msg = ""
 
@@ -358,9 +360,8 @@ contains
       read(toks_main(3), *)ver%patch
       ver%pre = toks_pre
       ver%meta = toks_meta
-    else                  ! empty
+    else                  ! remain empty
       msg = msgpre // msg
-      ver = version_empty()
     end if
 
     ! clean up
