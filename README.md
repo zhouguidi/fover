@@ -1,5 +1,5 @@
 # FOVER
-### FOVER, a [semantic versioning](http://semver.org/) library written in modern Fortran
+### FOVER, a [semantic versioning](http://semver.org/) library written in and for modern Fortran
 
 A pure Fortran library providing a type and a functions for manipulating version numbers following the semantic versioning standard version 2.0.0;
 
@@ -10,3 +10,5 @@ A pure Fortran library providing a type and a functions for manipulating version
 + FOVER is [TDD](https://en.wikipedia.org/wiki/Test-driven_development) designed;
 + FOVER is well documented;
 + FOVER is a free, Open Source Project.
+
+
