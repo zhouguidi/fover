@@ -79,6 +79,27 @@ contains
     if (allocated(self%meta)) deallocate(self%meta)
   end subroutine version_clean
 
+  function v(str, err, msg) result(ver)
+    character(len=*), intent(in) :: str
+    integer, optional, intent(out) :: err
+    character(len=:), allocatable, optional, intent(out) :: msg
+    type(version) :: ver
+
+    if (present(err)) then
+      if (present(msg)) then
+        ver = version(str, err, msg)
+      else
+        ver = version(str, err)
+      end if
+    else
+      if (present(msg)) then
+        ver = version(str, msg = msg)
+      else
+        ver = version(str)
+      end if
+    end if
+  end function v
+
   function version_valid(ver, msg) result(val)
     !* validate
     type(version), intent(in) :: ver
