@@ -10,6 +10,8 @@ module fover
     character(len=max_token_length), dimension(:), allocatable :: pre
     character(len=max_token_length), dimension(:), allocatable :: meta
   contains
+
+    procedure, public :: toString => version_tostring
     final :: version_clean
   end type version
 
@@ -158,7 +160,7 @@ contains
 
   function version_tostring(ver) result(str)
     !* convert to string
-    type(version), intent(in) :: ver
+    class(version), intent(in) :: ver
     character(len=:), allocatable :: str
 
     character(len=1000) :: tmpstr
