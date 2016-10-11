@@ -10,6 +10,8 @@ module fover
     character(len=max_token_length), dimension(:), allocatable :: pre
     character(len=max_token_length), dimension(:), allocatable :: meta
   contains
+
+    procedure, public :: toString => version_tostring
     final :: version_clean
   end type version
 
@@ -158,7 +160,7 @@ contains
 
   function version_tostring(ver) result(str)
     !* convert to string
-    type(version), intent(in) :: ver
+    class(version), intent(in) :: ver
     character(len=:), allocatable :: str
 
     character(len=1000) :: tmpstr
@@ -224,7 +226,7 @@ contains
           deallocate(thestr)
           return
         else
-          thestr = thestr(2 : )
+          thestr = thestr(2:len_trim(thestr))
         end if
       end if
     end if
@@ -279,12 +281,12 @@ contains
         else     ! has plus; plus is garanteed not to be 1 or last
           main = thestr(1 : pos_plus - 1)
           pre = ""
-          meta = thestr(pos_plus + 1 : )
+          meta = thestr(pos_plus + 1 : len_trim(thestr))
         end if
       else   ! has hyphen; hyphen is garanteed not to be 1 or last
         if (pos_plus == 0) then ! no plus
           main = thestr(1 : pos_hyphen - 1)
-          pre = thestr(pos_hyphen + 1 : )
+          pre = thestr(pos_hyphen + 1 : len_trim(thestr))
           meta = ""
         elseif (pos_plus < pos_hyphen) then ! plus is earlier than hyphen
           val = 6
@@ -295,14 +297,14 @@ contains
         else  ! has plus; plus is garanteed not to be 1 or last
           main = thestr(1 : pos_hyphen - 1)
           pre = thestr(pos_hyphen + 1 : pos_plus - 1)
-          meta = thestr(pos_plus + 1 : )
+          meta = thestr(pos_plus + 1 : len_trim(thestr))
         end if
       end if
     end if
 
     ! tokenize
     if (val == 0) then
-      toks_main = tokenize(main, val, msg)
+      call tokenize(main, val, msg, toks_main)
       if (val == 0) then
         select case(size(toks_main))
         case (0)
@@ -327,7 +329,7 @@ contains
     end if
 
     if (val == 0) then
-      toks_pre = tokenize(pre, val, msg)
+      call tokenize(pre, val, msg, toks_pre)
       if (val /= 0) then
         val = val + 14
         msg = "invalid pre-release version: " // msg
@@ -335,7 +337,7 @@ contains
     end if
 
     if (val == 0) then
-      toks_meta = tokenize(meta, val, msg)
+      call tokenize(meta, val, msg, toks_meta)
       if (val /= 0) then
         val = val + 17
         msg = "invalid build metadata: " // msg
@@ -554,15 +556,17 @@ contains
       if (allocated(tok2)) deallocate(tok2)
   end function version_diff
 
-  function tokenize(str, val, msg, deli) result(toks)
+  subroutine tokenize(str, val, msg, toks, deli) 
     character(len=*), intent(in) :: str
     integer, intent(out) :: val
     character(len=:), allocatable, intent(out) :: msg
     character(len=1), optional, intent(in) :: deli
-    character(len=max_token_length), dimension(:), allocatable :: toks
+    character(len=max_token_length), dimension(:), allocatable, intent(out) :: toks
+    character(len=max_token_length), dimension(:), allocatable :: tmp_toks
 
     character(len=1) :: del
-    integer :: ichr, last_del
+    integer :: ichr, last_del, i
+
 
     del = '.'
     if (present(deli)) del = deli
@@ -570,9 +574,10 @@ contains
     val = 0
     msg = ""
 
-    allocate(toks(0))
+    allocate(tmp_toks(20))
 
-    if (len(str) /= 0) then
+    i=1
+    if (len_trim(str) > 0) then
       last_del = 0
 
       do ichr = 1, len(str)
@@ -580,37 +585,42 @@ contains
           if (ichr == 1) then
             val = 1
             msg = "leading delimeter"
-            deallocate(toks)
             return
           elseif (ichr == len(str)) then
             val = 2
             msg = "trailing delimeter"
-            deallocate(toks)
             return
           else
             if (last_del == 0) then
-              toks = [toks, str(1 : ichr - 1)]
+              tmp_toks(i) = str(1:ichr-1)
+              i = i+1
             else
               if (last_del == ichr - 1) then
                 val = 3
                 msg = "empty token"
-                deallocate(toks)
                 return
               end if
-              toks = [toks, str(last_del + 1 : ichr - 1)]
+              tmp_toks(i) = str(last_del + 1 : ichr - 1)
+              i = i+1
             end if
             last_del = ichr
           end if
         end if
       end do
-      
+
       if (last_del == 0) then  ! no delimeter found
-        toks = [str]
+        allocate(toks(1))
+        toks(1) = str
       else                     ! don't forget the last token
-        toks = [toks, str(last_del + 1 : )]
+        allocate(toks(i))
+        do i=1, size(toks)-1
+          toks(i) = tmp_toks(i)
+        enddo
+        toks(i) = str(last_del + 1 : len_trim(str))
       end if
     end if
-  end function tokenize
+
+  end subroutine tokenize
 
   function main_valid(main, msg) result(val)
     character(len=max_token_length), dimension(:), intent(in) :: main
